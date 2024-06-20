@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>LAN Chat</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        #chat-container {
+            width: 50%;
+            margin: 50px auto;
+            padding: 10px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 5px;
+        }
+        #messages {
+            list-style-type: none;
+            padding: 0;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        #messages li {
+            padding: 8px 10px;
+            margin-bottom: 10px;
+            background-color: #e9e9e9;
+            border-radius: 5px;
+        }
+        #message-input {
+            display: flex;
+        }
+        #message {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px 0 0 5px;
+            margin: 0;
+        }
+        #send {
+            padding: 10px;
+            border: none;
+            background-color: #28a745;
+            color: #fff;
+            cursor: pointer;
+            border-radius: 0 5px 5px 0;
+        }
+        #send:hover {
+            background-color: #218838;
+        }
+    </style>
+</head>
+<body>
+    <div id="chat-container">
+        <ul id="messages"></ul>
+        <div id="message-input">
+            <input id="message" autocomplete="off" placeholder="Type a message..." />
+            <button id="send">Send</button>
+        </div>
+    </div>
+    <script type="text/javascript">
+        document.addEventListener('DOMContentLoaded', () => {
+            var socket = io();
+
+            function addMessage(username, message, timestamp) {
+                var messages = document.getElementById('messages');
+                var li = document.createElement('li');
+                var relativeTime = moment(timestamp).fromNow();
+                li.appendChild(document.createTextNode(`${username} [${relativeTime}]: ${message}`));
+                messages.appendChild(li);
+            }
+
+            // Load previous messages
+            $.get('/messages', function(data) {
+                data.forEach(function(msg) {
+                    addMessage(msg[0], msg[1], msg[2]);
+                });
+            });
+
+            socket.on('message', function(msg){
+                addMessage(msg.username, msg.message, msg.timestamp);
+            });
+
+            document.getElementById('send').onclick = function() {
+                var message = document.getElementById('message').value;
+                if (message.trim()) {
+                    socket.send(message);
+                    document.getElementById('message').value = '';
+                }
+            };
+
+            document.getElementById('message').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    document.getElementById('send').click();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
